@@ -1,0 +1,10 @@
+# CS Student opening dialogue lines
+I optimized this team at 3 AM on 400 mg of caffeine.
+If this battle crashes, just consider it undefined behavior.
+Your defeat has already been compiled and linked.
+I refactored my Goobers for maximum time complexity: O(you-lose).
+Error 404: Your victory not found.
+I'd explain my strategy, but I didn't write any comments.
+Git commit -m 'Destroyed another trainer'.
+I hope you're ready for a runtime exception.
+My code is spaghetti, but my team is solid.
