@@ -7,6 +7,10 @@ import models.Trainer;
 import networking.NetworkManager;
 import networking.ReadyPacket;
 import view.TrainerSelect;
+import game.UserSession;
+import game.TrainerSelectState;
+import game.GameManager;
+import game.GameState;
 
 public class MultiplayerSetupState implements GameState {
 
@@ -25,36 +29,43 @@ public class MultiplayerSetupState implements GameState {
         this.isHost = isHost;
     }
 
-    // set from TrainerSelectController
+    // called by controller
     public void setLocalTrainer(Trainer t) {
         this.localTrainer = t;
-        if (gm.getSession() != null) {
-        	gm.getSession().setPlayerTrainer(t);
-        }
+        gm.getSession().setPlayerTrainer(t);
+    }
+
+    public void onLocalReady() {
+        localReady = true;
+        maybeStartBattle();
     }
 
     // called by NetworkManager listener
     public void onNetworkDataReceived(Object obj) {
         if (obj instanceof ReadyPacket) {
-            ReadyPacket rp = (ReadyPacket) obj;
-            remoteTrainer = rp.getTrainer();
-            remoteReady = true;
-            maybeStartBattle();
+        	ReadyPacket rp = (ReadyPacket) obj;
+        	remoteTrainer = rp.getTrainer();
+        	remoteReady = true;
         }
+        maybeStartBattle();
     }
 
     private void maybeStartBattle() {
         if (localTrainer != null && remoteTrainer != null && localReady && remoteReady) {
-            // from THIS client’s POV, localTrainer is "player", remoteTrainer is "opponent"
-            MultiplayerBattleState battle = new MultiplayerBattleState(gm, net, localTrainer, remoteTrainer, isHost);
+            MultiplayerBattleState battle = new MultiplayerBattleState(gm, net, remoteTrainer);
             gm.setState(battle);
         }
     }
 
     @Override
     public void enter(UserSession session) {
+        // create a fresh TrainerSelectState model (same one you use in single-player)
         TrainerSelectState selectModel = new TrainerSelectState(gm);
+
+        // use the multiplayer-aware controller
         TrainerSelectController controller = new TrainerSelectController(selectModel, this);
+
+        // build the view
         Stage stage = gm.getStage();
         TrainerSelect view = new TrainerSelect(stage, controller);
 
@@ -64,36 +75,16 @@ public class MultiplayerSetupState implements GameState {
             stage.getScene().setRoot(view);
         }
     }
-    
-    public void onLocalReady(Trainer trainer) {
-        // remember local trainer
-        this.localTrainer = trainer;
 
-        // Only touch session if it exists
-        if (gm.getSession() != null) {
-            gm.getSession().setPlayerTrainer(trainer);
-        }
-
-        localReady = true;
-
-        // send a ReadyPacket that includes our trainer
-        net.send(new ReadyPacket(trainer));
-
-        maybeStartBattle();
-    }
-    
- // used if the controller already called setLocalTrainer(...)
-    public void onLocalReady() {
-        if (localTrainer == null) {
-            return; // nothing to send
-        }
-
-        if (gm.getSession() != null) {
-            gm.getSession().setPlayerTrainer(localTrainer);
-        }
-
-        localReady = true;
-        net.send(new ReadyPacket(localTrainer));
-        maybeStartBattle();
-    }
+	public void onLocalReady(Trainer trainer) {
+		this.localTrainer = trainer;
+		localReady = true;
+		
+		gm.ensureSession();
+		gm.getSession().setPlayerTrainer(trainer);
+		
+		net.send(new ReadyPacket(trainer));
+		maybeStartBattle();
+		
+	}
 }

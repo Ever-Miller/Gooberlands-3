@@ -114,7 +114,7 @@ public class MoveFactory {
 		// Crit-focused assassin with dizzy debuff
 		case "John Pork":
 			moves.add(new GooberMove("Pick Up The Phone", 0, new CritModificationEffect(2, 0.5), 1.0, 0.0, TargetType.SELF, 0));
-			moves.add(new GooberMove("Left On Read", 10, new DizzyEffect(2, 0.2), 1.0, 0.0, TargetType.ENEMY, 0));
+			moves.add(new GooberMove("Left On Read", 10, new DizzyEffect(1, 0.2), 1.0, 0.0, TargetType.ENEMY, 0));
 			moves.add(new GooberMove("Oink Strike", 60, null, 0.9, 0.3, TargetType.ENEMY, 10));
 			moves.add(new GooberMove("Baconator", 40, null, 0.85, 0.5, TargetType.ENEMY, 15));
 			break;
@@ -132,7 +132,7 @@ public class MoveFactory {
 			moves.add(new GooberMove("Thou Art Cringe", 0, new CritModificationEffect(3, 0.5), 1.0, 0.0, TargetType.SELF, 0));
 			moves.add(new GooberMove("Poetic Justice", 45, null, 0.95, 0.1, TargetType.ENEMY, 0));
 			moves.add(new GooberMove("No Maidens?", 10, new DefenceModificationEffect(3, -0.25), 0.90, 0.0, TargetType.ENEMY, 10));
-			moves.add(new GooberMove("Ratio + L + Bozo", 70, new DizzyEffect(2, 0.3), 0.85, 0.2, TargetType.ALL_ENEMIES, 15));
+			moves.add(new GooberMove("Ratio + L + Bozo", 70, new DizzyEffect(1, 0.3), 0.85, 0.2, TargetType.ALL_ENEMIES, 15));
 			break;
 			
 		// SPECIALS 

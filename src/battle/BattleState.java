@@ -10,9 +10,6 @@
  */
 package battle;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import models.Trainer;
 
 public class BattleState {
@@ -36,9 +33,9 @@ public class BattleState {
 
 	}
 	/** The player-controlled trainer. */
-	private Trainer player;
+	private final Trainer player;
 	/** The opposing trainer. */
-	private Trainer opponent;
+	private final Trainer opponent;
 	/** Current phase of the battle. */
 	private BattlePhase phase;
 	
@@ -77,14 +74,6 @@ public class BattleState {
 	 */
 	public void setPhase(BattlePhase phase) {
 		this.phase = phase;
-	}
-	
-	public void setPlayer(Trainer player) {
-	    this.player = player;
-	}
-
-	public void setOpponent(Trainer opponent) {
-	    this.opponent = opponent;
 	}
 	
     /**

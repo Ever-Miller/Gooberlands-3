@@ -222,6 +222,10 @@ public class Goober implements Serializable {
 		return clone;
 	}
 	
+	public void clearEffects() {
+		state.clearEffects();
+	}
+	
 	/** @return the name of this Goober */
 	public String getName() { return name; }
 	

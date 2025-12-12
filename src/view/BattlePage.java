@@ -65,8 +65,6 @@ import models.GooberMove;
 import models.MoveDescriptions;
 import models.Trainer;
 
-import game.MultiplayerBattleState;
-
 
 /**
  * Main battle screen UI.
@@ -671,25 +669,15 @@ public class BattlePage extends StackPane{
 	 * @param action the player's selected action
 	 */
 	public void submitPlayerAction(Action action) {
-	    if (action == null) return;
-
-	    // Hide move menu if it was open
-	    if (moveMenu != null) {
-	        moveMenu.setVisible(false);
-	    }
-
-	    // Are we in multiplayer or single-player?
-	    var gm = GameManager.getInstance();
-	    var state = gm.getState();
-
-	    if (state instanceof game.MultiplayerBattleState) {
-	        // MULTIPLAYER: let MultiplayerBattleState handle sending & resolving
-	        ((game.MultiplayerBattleState) state).onLocalAction(action);
-	    } else {
-	        // SINGLE-PLAYER: keep old behavior
-	        pendingPlayerAction = action;
-	        runTurn();
-	    }
+		if (action == null) return;
+		
+		pendingPlayerAction = action;
+		
+		// Hide move menu if it was open
+		if (moveMenu != null) {
+			moveMenu.setVisible(false);
+		}
+		runTurn(); 
 	}
 	
 	/**
@@ -698,20 +686,12 @@ public class BattlePage extends StackPane{
 	 * @param item the item to use
 	 */
 	public void useItemFromBag(Item item) {
-	    if (item == null || controller.getPlayer() == null) return;
+		if (item == null || controller.getPlayer() == null) return;
 
-	    Trainer targetTrainer = item.isTargetSelf() ? controller.getPlayer() : controller.getOpponent();
-	    Action action = new ItemAction(controller.getPlayer(), targetTrainer, item.getName());
-
-	    var gm = GameManager.getInstance();
-	    var state = gm.getState();
-
-	    if (state instanceof MultiplayerBattleState) {
-	        ((game.MultiplayerBattleState) state).onLocalAction(action);
-	    } else {
-	        pendingPlayerAction = action;
-	        runTurn();
-	    }
+        Trainer targetTrainer = item.isTargetSelf() ? controller.getPlayer() : controller.getOpponent();
+        
+        pendingPlayerAction = new ItemAction(controller.getPlayer(), targetTrainer, item.getName());
+        runTurn();
 	}
 	
 	/**
@@ -1116,18 +1096,6 @@ public class BattlePage extends StackPane{
 	    	battleLogArea.appendText("\n");
 	    	battleLogArea.setScrollTop(Double.MAX_VALUE);
 	    }
-	}
-	
-	public void showTurnResult(BattleTurnResult result) {
-	    if (result == null) return;
-
-	    showTurnLogs(result.getLogs());
-	    updateUIFromModel();
-	    // Optional: you can reuse the attack animations here if you want
-	}
-
-	public void refreshFromState() {
-	    updateStats();
 	}
 	
 	

@@ -259,6 +259,10 @@ public class ViewStyles {
         	fileName = isFront ? "Gigachad_front" : "gigachad_back";
         	folder = isFront ? "Goober_sprites_front/" : "Goober_sprites_back/";
         	break;
+        case "Lopunny":
+        	fileName = isFront ? "lopunny_front" : "lopunny_back";
+        	folder = isFront ? "Goober_sprites_front/" : "Goober_sprites_back/";
+        	break;
         case "Necromancer":
         	fileName = isFront ? "Necromancer_front" : "Necromancer_back";
         	folder = isFront ? "Trainer_sprites_front/" : "Trainer_sprites_back/";

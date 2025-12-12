@@ -250,7 +250,7 @@ public class MapView extends StackPane {
 			levelSum += g.getLevel();
 		}
 		
-		Label avgLevel = new Label("AVG ENEMY LVL: " + (levelSum / 3));
+		Label avgLevel = new Label("AVG ENEMY LVL: " + (levelSum / enemy.getTeam().size()));
 		avgLevel.setTextFill(Color.LIGHTGRAY);
 		avgLevel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
 		

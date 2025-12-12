@@ -21,16 +21,45 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import networking.NetworkManager;
 
+/**
+ * File: Search.java
+ *
+ * Purpose:
+ *      Displays the client-side connection screen for friend battles.
+ *
+ *  This screen allows the player to:
+ *      - Enter a host IP address
+ *      - Connect to a multiplayer room
+ *      - Return to the friend battle menu
+ *
+ *  All networking responsibilities are delegated to {@link NetworkManager}.
+ */
 public class Search extends StackPane {
 
+    /** JavaFX stage used for scene navigation. */
     private final Stage stage;
+
+    /** Network manager handling client connections. */
     private NetworkManager net;
 
+    /**
+     * Constructs the friend battle search screen.
+     * @param stage active JavaFX stage
+     */
     public Search(Stage stage) {
         this.stage = stage;
         execute();
     }
 
+    /**
+     * Builds and renders the multiplayer connection UI.
+     *
+     * This includes:
+     * - Host IP input field
+     * - Connect button
+     * - Back navigation
+     * - Settings access
+     */
     public void execute() {
         Rectangle background = new Rectangle(1140, 640, ViewStyles.BACKGROUND_COLOR);
 
@@ -49,8 +78,10 @@ public class Search extends StackPane {
         TextField inputField = ViewStyles.createStyledTextField("IP ADDRESS");
         code_input.getChildren().addAll(lbl, inputField);
 
-        Button btnConnect = ViewStyles.createStyledButton("Connect");
+        // Status label for feedback
+        Label statusLabel = ViewStyles.createStyledLabel("Enter host IP and connect.");
 
+        Button btnConnect = ViewStyles.createStyledButton("Connect");
         btnConnect.setOnAction(event -> {
             String ip = inputField.getText().trim();
             if (ip.isEmpty()) {
@@ -59,13 +90,15 @@ public class Search extends StackPane {
 
             btnConnect.setText("Connecting...");
             btnConnect.setDisable(true);
+            statusLabel.setText("Connecting to " + ip + "...");
 
             net = new NetworkManager();
 
-            // Route all incoming data to the *current* GameState,
-            // just like we did on the host side.
+            // Listener: route all incoming data to the current GameState
             net.setListener(data -> {
                 System.out.println("[CLIENT] Received data: " + data);
+
+                // Not on JavaFX thread here
                 Platform.runLater(() -> {
                     GameManager gm = GameManager.getInstance();
                     GameState state = gm.getState();
@@ -75,27 +108,28 @@ public class Search extends StackPane {
                     } else if (state instanceof MultiplayerBattleState) {
                         ((MultiplayerBattleState) state).onNetworkDataReceived(data);
                     } else {
-                        System.out.println("[CLIENT] Received multiplayer data in non-multiplayer state: " + data);
+                        System.out.println("[CLIENT] Received data in non-multiplayer state: " + data);
                     }
                 });
             });
 
-            // Connect in a background thread
+            // Connect to the host in a background thread.
             new Thread(() -> {
                 try {
                     net.connectTo(ip, 4000);
 
-                    // Once connected, go into MultiplayerSetupState (team select)
+                    // Once connected, move to team select (MultiplayerSetupState)
                     Platform.runLater(() -> {
                         GameManager gm = GameManager.getInstance();
                         MultiplayerSetupState setupState =
-                                new MultiplayerSetupState(gm, net, false); // isHost = false on client
+                                new MultiplayerSetupState(gm, net, false); // isHost = false
+                        statusLabel.setText("Connected! Opening team select...");
                         gm.setState(setupState);
                     });
-
                 } catch (IOException ex) {
                     ex.printStackTrace();
                     Platform.runLater(() -> {
+                        statusLabel.setText("Connection failed.");
                         btnConnect.setText("Connect");
                         btnConnect.setDisable(false);
                     });
@@ -108,6 +142,7 @@ public class Search extends StackPane {
             if (net != null) {
                 net.close();
             }
+
             FriendBattleSelect next_page = new FriendBattleSelect(stage);
             Scene scene = new Scene(next_page, 1140, 640);
             stage.setScene(scene);
@@ -124,7 +159,7 @@ public class Search extends StackPane {
         StackPane.setMargin(settingsCog, new Insets(20));
 
         code_input.setPadding(new Insets(0, 200, 0, 0));
-        vbox.getChildren().addAll(code_input, btnConnect, btnBack);
+        vbox.getChildren().addAll(code_input, statusLabel, btnConnect, btnBack);
         screen.setCenter(vbox);
 
         this.getChildren().addAll(background, screen, settingsCog);

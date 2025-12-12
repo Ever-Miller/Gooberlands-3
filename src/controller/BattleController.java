@@ -143,12 +143,7 @@ public class BattleController {
      * @return the AI-selected action
      */
     public Action getAiAction() {
-    	var state = gameManager.getState();
-    	
-    	if (state instanceof GameBattleState) {
-    		return ((GameBattleState) state).generateAIAction();
-    	}
-        return null;
+        return ((GameBattleState) gameManager.getState()).generateAIAction();
     }
 
     /**

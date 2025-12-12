@@ -33,8 +33,6 @@ public class BattleManager {
 	private MoveCalculator calculator = new MoveCalculator();
 	private BattleTurnResult currentResult;
 	
-    private final List<String> logs = new ArrayList<>();
-	
 	/**
 	 * Starts a new battle with the given player and opponent Trainers.
 	 * 
@@ -330,7 +328,7 @@ public class BattleManager {
 			// POWER OF FRIENDSHIP: Full Heal + Cleanse active unit
 			Goober active = actor.getActiveGoober();
 			active.heal(active.getMaxHp());
-			active.getEffects().clear(); // Remove all statuses
+			active.clearEffects(); // Remove all statuses
 			active.getState().unStun();
 			break;
 			
@@ -477,12 +475,5 @@ public class BattleManager {
 	
 	public List<String> getLogs() {
 		return currentResult.getLogs();
-	}
-	
-	public void setLogs(List<String> newLogs) {
-	    logs.clear();
-	    if (newLogs != null) {
-	        logs.addAll(newLogs);
-	    }
 	}
 }

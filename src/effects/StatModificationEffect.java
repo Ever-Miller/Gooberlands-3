@@ -93,6 +93,10 @@ public class StatModificationEffect extends Effect {
 
         return false;
     }
+    
+    public void remove() {
+    	target.getState().revertStatChange(type, effectiveChange);
+    }
 
     /**
      * Creates a copy of this stat modification effect.

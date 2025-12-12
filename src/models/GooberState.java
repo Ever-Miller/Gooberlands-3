@@ -1,9 +1,16 @@
 /**
  * File: GooberState.java
+ *
  * Purpose:
  * 		Represents the dynamic, battle-modifiable state of a Goober.
- * 		This class tracks the Goober's current HP, level-based stats, applied status effects, temporary conditions (stun, accuracy debuffs), and XP progression. 
- * 		All permanent stats come from the base Goober. 
+ * 		This class tracks the Goober's current HP, level-based stats, applied status effects,
+ * 		temporary conditions (stun, accuracy debuffs), and XP progression.
+ * 		All permanent stats originate from the base {@link Goober}.
+ *
+ * Design:
+ * 		- This class is mutable during battles
+ * 		- Works alongside {@link effects.Effect} and {@link battle.BattleManager}
+ * 		- Serializable for save support
  */
 package models;
 
@@ -13,12 +20,15 @@ import java.util.List;
 
 import effects.Effect;
 import effects.EffectType;
+import effects.StatModificationEffect;
 
 public class GooberState implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
+	/** Base immutable Goober definition. */
 	private final Goober goober;
 	
+	// --- Core Stats ---
 	private int maxHp;
 	private int currentHp;
     private int attack;
@@ -26,22 +36,28 @@ public class GooberState implements Serializable {
     private double defence;
     private int speed;
 
-    // Temporary battle conditions
-    private boolean stunned = false; // active stun
-    private boolean pendingStun = false; // will stun next turn
-    private double hitChance = 1.0; // accuracy multiplier
+    // --- Temporary Battle Conditions ---
+    private boolean stunned = false;        // active stun
+    private boolean pendingStun = false;    // queues stun for next turn
+    private double hitChance = 1.0;         // accuracy multiplier
     
+    /** Base attack at current level, used for stat cap enforcement. */
     private int baseLevelAttack;
     
+    /** Active effects applied to the Goober. */
     private ArrayList<Effect> effects = new ArrayList<>();
+    
+    /** XP and level management handler. */
     private XPManager leveler;
     
     
     /** 
-     * Creates a new GooberState for a given Goober at a specific level.
-     * 
-     * @param goober the Goober whose state this represents 
-     * @param level  the starting level of the Goober     
+     * Constructs a new GooberState for a specific Goober and level.
+     *
+     * Initializes XP, computes scaled stats, and sets HP to maximum.
+     *
+     * @param goober the Goober entity being represented
+     * @param level  starting level
      */
     public GooberState(Goober goober, int level) {
     	this.goober = goober;
@@ -53,9 +69,12 @@ public class GooberState implements Serializable {
     }
     
     /**
-     * Recalculates all stats based on the Goober's current level.
-     * 
-     * @param curLevel the level to base stat scaling on     
+     * Recalculates all stats based on the supplied level.
+     *
+     * Uses non-linear scaling for HP, attack, defence, and crit.
+     * Speed is determined by Goober type with level-based progression.
+     *
+     * @param curLevel the level used for stat scaling
      */
     public void recalculateStats(int curLevel) {
 		double multiplier = Math.pow((double) curLevel - 1, 1.5);
@@ -79,60 +98,79 @@ public class GooberState implements Serializable {
 		speed = (int)(baseSpeed + curLevel * 1.5);
 	}
     
+    // ===============================
     // Temporary Status Conditions
+    // ===============================
     
-    /** Applies a stun next turn. */
+    /**
+     * Queues a stun to be applied at the start of the next turn.
+     */
     public void queueStun() { pendingStun = true; }
     
-    /** Activates stun for this turn. Called by BattleManager. */
+    /**
+     * Applies a queued stun for the current turn.
+     *
+     * Called by {@link battle.BattleManager} at turn start.
+     */
     public void applyStun() {
     	stunned = pendingStun;
     	pendingStun = false;
     }
-    /** Removes the stun condition. */
+    
+    /**
+     * Removes the stun condition.
+     */
 	public void unStun() { stunned = false; }
 	
-	/** @return true if the Goober cannot act this turn. */
+	/**
+	 * @return true if the Goober is stunned and unable to act
+	 */
 	public boolean isStunned() { return stunned; }
 	
-	/** @return true if accuracy has been modified this battle. */
+	/**
+	 * @return true if accuracy has been reduced from its default
+	 */
 	public boolean isDizzy() { return hitChance != 1.0; }
 	
+	/**
+	 * @return current hit chance modifier
+	 */
 	public double getHitChance() { return hitChance; }
 	
+	/**
+	 * Applies a stat modification effect.
+	 *
+	 * Used by {@link effects.StatModificationEffect}.
+	 *
+	 * @param type modification type
+	 * @param strength strength multiplier
+	 * @return actual amount modified
+	 */
 	public double incrStat(EffectType type, double strength) {
-		double changeAmount;
 		switch (type) {
 		case CRIT_MODIFICATION:
-			changeAmount = critChance * strength;
-			critChance = Math.max(0.0, Math.min(1.0, critChance + changeAmount));
-			return changeAmount;
+			double oldCrit = critChance;
+			critChance = Math.max(0.0, Math.min(1.0, critChance + critChance * strength));
+			return critChance - oldCrit;
 			
 		case DAMAGE_MODIFICATION:
 			int atkChange = (int) (attack * strength);
-			
 			int maxLimit = baseLevelAttack * 3; 
 			
 			if (strength > 0) {
-				if (attack >= maxLimit) {
-					return 0;
-				}
-				if (attack + atkChange > maxLimit) {
-					atkChange = maxLimit - attack;
-				}
+				if (attack >= maxLimit) return 0;
+				if (attack + atkChange > maxLimit) atkChange = maxLimit - attack;
 			}
 			
-			if (attack + atkChange < 1) {
-				atkChange = 1 - attack;
-			}
+			if (attack + atkChange < 1) atkChange = 1 - attack;
 			
 			attack += atkChange;
 			return (double) atkChange;
 			
 		case DEFENCE_MODIFICATION:
-			changeAmount = defence * strength;
-			defence = Math.max(0.0, Math.min(1.0, defence + changeAmount));
-			return changeAmount;
+			double oldDef = defence;
+			defence = Math.max(0.0, Math.min(1.0, defence + defence * strength));
+			return defence - oldDef;
 			
 		case DIZZY:
 			double oldHit = hitChance;
@@ -140,17 +178,20 @@ public class GooberState implements Serializable {
 			return oldHit - hitChance;
 			
 		default:
-			break;
+			return 0.0;
 		}
-		return 0.0;
 	}
 	
-	
+	/**
+	 * Reverts a previously applied stat modification.
+	 *
+	 * @param type modification type
+	 * @param amount amount to revert
+	 */
 	public void revertStatChange(EffectType type, double amount) {
 		switch (type) {
 		case DAMAGE_MODIFICATION:
 			attack -= (int) amount;
-			// Safety clamp
 			if (attack < 1) attack = 1;
 			break;
 		case DEFENCE_MODIFICATION:
@@ -167,19 +208,23 @@ public class GooberState implements Serializable {
 		}
 	}
 	
-	// EFFECTS
+    // ===============================
+    // Effects Handling
+    // ===============================
 	
 	/**
-	 * Adds a status effect to the Goober.
-	 * @param effect the effect to apply
+	 * Adds a new effect to the Goober.
+	 *
+	 * @param effect effect to add
 	 */
 	public void addEffect(Effect effect) {
 		effects.add(effect);
 	}
 	
 	/**
-	 * Applies all effects for this turn and removes expired ones.
-	 * Called by the BattleManager at the start or end of each turn.    
+	 * Applies all active effects for the current turn.
+	 *
+	 * Expired effects are automatically removed.
 	 */
 	public void cycleEffects() {
 		for (int i = effects.size() - 1; i >= 0; i--) {
@@ -189,24 +234,44 @@ public class GooberState implements Serializable {
 		}
 	}
 	
-	// HEALTH & XP
+	/**
+	 * Clears all effects and reverts stat changes.
+	 */
+	public void clearEffects() {
+		for (Effect e : effects) {
+			if (e instanceof StatModificationEffect) ((StatModificationEffect) e).remove();
+		}
+		effects.clear();
+	}
+	
+    // ===============================
+    // Health & XP
+    // ===============================
 	
 	/**
-	 * Edits current HP by a delta, clamped between 0 and maxHp.
-	 * @param change positive to heal, negative to damage     
+	 * Adjusts HP by a delta value.
+	 *
+	 * @param change positive to heal, negative to damage
 	 */
 	public void editHealth(int change) {
 		currentHp = Math.max(0, Math.min(currentHp + change, maxHp));
 	}
 	
+	/**
+	 * Sets HP to a fixed value within valid bounds.
+	 *
+	 * @param amount desired HP
+	 */
 	public void setHealth(int amount) {
 		currentHp = Math.max(0, Math.min(amount, maxHp));
 	}
 	
 	/**
-	 * Adds XP and recalculates stats on level up.
-	 * 
-	 * @param xpAmount amount of XP gained     
+	 * Grants XP and handles level-up logic.
+	 *
+	 * Fully heals the Goober after leveling.
+	 *
+	 * @param xpAmount XP earned
 	 */
 	public void gainXp(int xpAmount) {
 		boolean leveled = leveler.addXp(xpAmount);
@@ -216,20 +281,37 @@ public class GooberState implements Serializable {
 		}
 	}
 	
-	// GETTERS 
+	// ===============================
+    // Getters
+    // ===============================
 	
+	/** @return current Goober level */
 	public int getLevel() { return leveler.getLevel(); }
+
+	/** @return maximum HP value */
 	public int getMaxHp() { return maxHp; }
+
+	/** @return current attack stat */
 	public int getAttack() { return attack; }
+
+	/** @return current HP value */
 	public int getCurrentHp() { return currentHp; }
+
+	/** @return current defence multiplier */
 	public double getDefence() { return defence; }
+
+	/** @return current critical hit chance */
 	public double getCritChance() { return critChance; }
+
+	/** @return current speed stat */
 	public int getSpeed() { return speed; }
+
+	/** @return XP manager handling level progression */
 	public XPManager getXpManager() { return leveler; }
-	
-	/** @return true if HP is at or below zero. */
+
+	/** @return true if HP is zero or below */
 	public boolean isFainted() { return currentHp <= 0; }
-	
-	/** @return a list of all active status effects. */
+
+	/** @return list of active status effects */
 	public List<Effect> getEffects() { return effects; }
 }

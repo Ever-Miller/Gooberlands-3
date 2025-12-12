@@ -109,13 +109,13 @@ public class GameBattleState implements GameState {
         for (Goober g : player.getTeam()) {
             g.setHealth(g.getMaxHp());
             g.getState().unStun();
-            g.getState().getEffects().clear();
+            g.clearEffects();
         }
 
         for (Goober g : opponent.getTeam()) {
             g.setHealth(g.getMaxHp());
             g.getState().unStun();
-            g.getState().getEffects().clear();
+            g.clearEffects();
         }
 
         // Create battle manager and controller
